@@ -4,6 +4,7 @@ metadata:
   name: chat-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
+    spec.ingressClassName: "nginx"
     #nginx.ingress.kubernetes.io/rewrite-target: /$2
     #nginx.org/proxy-connect-timeout: "175s" # Connection timeout
 spec:
