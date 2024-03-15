@@ -1,0 +1,53 @@
+name: Tests
+
+on:
+  pull_request:
+    branches:
+    - main
+
+permissions: read-all
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s-version:
+          - v1.29.x
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build containers
+      run: |
+        docker build --platform linux/amd64 -t registry.local:5000/front_end:latest 1__Front_End
+        docker build --platform linux/amd64 -t registry.local:5000/llms_proxy:latest 2__Models_FE
+        docker build --platform linux/amd64 -t registry.local:5000/llama7b-non-optimized:latest 3__Local_Models/LLAMA-NON
+    - uses: chainguard-dev/actions/setup-kind@main
+      id: kind
+      with:
+        k8s-version: ${{ matrix.k8s-version }}
+        registry-authority: registry.local:5000
+        cluster-suffix: cluster.local
+        service-account-issuer: https://kubernetes.default.svc.cluster.local
+    - name: Push containers
+      run: |
+        docker push registry.local:5000/front_end
+        docker push registry.local:5000/llms_proxy
+        docker push registry.local:5000/llama7b-non-optimized
+    - name: Install nginix
+      run: |
+        helm upgrade --install ingress-nginx ingress-nginx \
+          --repo https://kubernetes.github.io/ingress-nginx \
+          --namespace ingress-nginx --create-namespace
+    - name: Configure ingress using nginix
+      run: |
+        kubectl apply -f ingress.yaml
+    - name: Create persistent volumes
+      run: |
+        kubectl apply -f efs_storage.yaml
+    - name: Run deployment
+      run: |
+        kubectl apply -f deployment.yaml
+    - name: Configure port forarding to access services
+      run: |
+        kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8000:80
