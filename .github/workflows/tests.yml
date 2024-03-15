@@ -25,7 +25,7 @@ jobs:
       run: |
         docker build --platform linux/amd64 -t registry.local:5000/front_end:latest 1__Front_End
         docker build --platform linux/amd64 -t registry.local:5000/llms_proxy:latest 2__LLMs_Proxy
-        docker build --platform linux/amd64 -t registry.local:5000/llama7b-non-optimized:latest 3__Local_Models/LLAMA-NON
+        docker build --platform linux/amd64 -t registry.local:5000/llama7b-non-optimized:latest 3__Local_Models/LLAMA-non
     - uses: chainguard-dev/actions/setup-kind@main
       id: kind
       with:
