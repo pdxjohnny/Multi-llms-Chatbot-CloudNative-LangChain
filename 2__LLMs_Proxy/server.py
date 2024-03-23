@@ -1,3 +1,5 @@
+import pathlib
+
 from fastapi import FastAPI,HTTPException
 from langserve import RemoteRunnable
 from langchain.prompts.chat import ChatPromptTemplate
@@ -29,14 +31,20 @@ def kubernetes_ipv4_address_for_service(service_name, namespace='default'):
         return service_cluster_ip
 
 # Get services ip
-openai_svc = kubernetes_ipv4_address_for_service("openai-service")
-llama_non_svc = kubernetes_ipv4_address_for_service("llama7b-non-optimized-service")
-llama_optim_svc = kubernetes_ipv4_address_for_service("llama7b-optimized-service")
+openai_svc = "127.0.0.1"
+llama_non_svc = "127.0.0.1"
+llama_optim_svc = "127.0.0.1"
+if pathlib.Path("/var/run/secrets/kubernetes.io/serviceaccount/namespace").exists():
+    openai_svc = kubernetes_ipv4_address_for_service("openai-service")
+    llama_non_svc = kubernetes_ipv4_address_for_service("llama7b-non-optimized-service")
+    llama_optim_svc = kubernetes_ipv4_address_for_service("llama7b-optimized-service")
 
 class Data(BaseModel):
     question: str
 
-app = FastAPI()
+import litellm.proxy.proxy_server
+
+app = litellm.proxy.proxy_server.app
 
 # Allow all origins with necessary methods and headers
 app.add_middleware(
@@ -99,5 +107,7 @@ async def process_text_data(question: Data,user_agent: str = Header(None)):
 
 
 if __name__=='__main__':
-    import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=5000) # nosec B104
+    # import uvicorn
+    # uvicorn.run(app, host='0.0.0.0', port=5000) # nosec B104
+    import litellm.proxy.proxy_cli
+    litellm.proxy.proxy_cli.run_server()

@@ -4,3 +4,4 @@ pip
 pydantic      ==      1.10.13
 kubernetes== 29.0.0
 uvicorn
+litellm[proxy]
